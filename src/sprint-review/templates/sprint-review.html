@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sprint review {{doc.header.sprint.endDate}}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@400;600;700;800&display=swap');
+
+    :root {
+      --red: #ed1a3a;
+      --black: #0a0a0a;
+      --white: #ffffff;
+      --off-white: #f8f8f8;
+      --light-gray: #f0f0f0;
+      --mid-gray: #e0e0e0;
+      --gray: #888888;
+      --dark-gray: #444444;
+      --success: #1a7a3a;
+      --success-bg: #f6fff8;
+      --success-border: #b6e8c2;
+      --warning: #8a6000;
+      --warning-bg: #fffbee;
+      --warning-border: #f0d870;
+      --danger: #c0392b;
+      --danger-bg: #fff8f8;
+      --danger-border: #f0c0c0;
+      --neutral-bg: var(--off-white);
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Sora', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--off-white);
+      color: var(--black);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ── Deck ── */
+    .deck { width: 100vw; height: 100vh; position: relative; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      gap: 1.4rem;
+      padding: 3rem 4.5rem 6rem;
+      background: var(--white);
+      overflow: hidden;
+    }
+    .slide.active { display: flex; }
+
+    .progress {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: var(--red); transition: width 0.3s ease; z-index: 200;
+    }
+
+    .slide-corner {
+      position: absolute; top: 2rem; right: 3rem;
+      font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
+      color: var(--red); letter-spacing: 0.08em;
+    }
+
+    .slide-kicker {
+      font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
+      color: var(--red); text-transform: uppercase; letter-spacing: 0.12em;
+    }
+
+    .slide-title {
+      font-size: 2.4rem; font-weight: 800; letter-spacing: -1px;
+      border-left: 6px solid var(--red); padding-left: 1rem;
+      margin-top: 0.3rem;
+    }
+
+    .slide-subtitle {
+      font-family: var(--mono); font-size: 0.8rem; color: var(--gray);
+      margin-top: 0.4rem; padding-left: calc(1rem + 6px);
+    }
+
+    /* ── Cover (t.html title slide) ── */
+    #s1 { flex-direction: row; padding: 0; gap: 0; }
+    #s1 .left {
+      flex: 0 0 55%;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 5rem; position: relative;
+    }
+    #s1 .left::before {
+      content: ''; position: absolute; left: 0; top: 0;
+      width: 6px; height: 100%; background: var(--red);
+    }
+    .cover-date { font-family: var(--mono); font-size: 0.8rem; color: var(--gray); letter-spacing: 0.08em; }
+    .cover-title {
+      font-size: clamp(2.6rem, 5vw, 4.5rem); font-weight: 800; line-height: 1;
+      letter-spacing: -2px; margin-top: 1rem;
+    }
+    .cover-title span { color: var(--red); }
+    .cover-sprint { font-size: 1.4rem; font-weight: 700; margin-top: 0.8rem; }
+    .cover-board { font-family: var(--mono); font-size: 0.9rem; color: var(--gray); margin-top: 0.4rem; }
+    .cover-stats { margin-top: 3rem; display: flex; flex-wrap: wrap; gap: 2.2rem; }
+    .cover-stat { display: flex; flex-direction: column; }
+    .cover-stat-n { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; color: var(--red); }
+    .cover-stat-l { font-family: var(--mono); font-size: 0.7rem; color: var(--gray); }
+    #s1 .right {
+      flex: 1; position: relative; overflow: hidden; background: var(--black); color: var(--off-white);
+      display: flex; flex-direction: column; justify-content: flex-end; padding: 4rem 3.5rem 7rem;
+    }
+
+    /* ── Cover art: generated SVG from the sprint name, faded behind the theme title ── */
+    .cover-art { position: absolute; inset: 0; opacity: 0.16; pointer-events: none; color: var(--off-white); }
+    .cover-art svg { width: 100%; height: 100%; display: block; }
+    .cover-theme-label {
+      position: relative; font-family: var(--mono); font-size: 0.8rem; font-weight: 700;
+      color: var(--red); letter-spacing: 0.15em; text-transform: uppercase;
+    }
+    .cover-theme {
+      position: relative; font-size: clamp(2.4rem, 5vw, 4.8rem); font-weight: 800; line-height: 1;
+      letter-spacing: -1px; text-transform: uppercase; margin-top: 0.6rem; overflow-wrap: anywhere;
+    }
+    .cover-theme-bar { position: relative; width: 72px; height: 6px; background: var(--red); margin-top: 1.2rem; }
+
+    /* ── KPI cards (t.html philosophy cards) ── */
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+    .kpi { border: 1.5px solid var(--mid-gray); border-radius: 8px; overflow: hidden; background: var(--white); }
+    .kpi-body { padding: 1rem 1.2rem; }
+    .kpi-label { font-family: var(--mono); font-size: 0.7rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; }
+    .kpi-value { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.04em; margin-top: 0.3rem; }
+    .kpi-sub { font-family: var(--mono); font-size: 0.72rem; color: var(--gray); margin-top: 0.2rem; }
+    .kpi.is-success .kpi-value { color: var(--success); }
+    .kpi.is-warning .kpi-value { color: var(--warning); }
+    .kpi.is-danger .kpi-value { color: var(--danger); }
+
+    /* ── Goal cards (t.html myth / real cards) ── */
+    .goal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .goal-card { border: 2px solid var(--mid-gray); border-radius: 8px; padding: 1.2rem 1.4rem; background: var(--neutral-bg); display: flex; flex-direction: column; gap: 0.6rem; }
+    .goal-card .goal-label { font-family: var(--mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gray); display: flex; align-items: center; gap: 0.5rem; }
+    /* Target icon in currentColor: green achieved, amber partial, red not achieved, grey not assessed. */
+    .goal-card .goal-icon { width: 18px; height: 18px; flex: 0 0 auto; }
+    .goal-card .goal-text { font-size: 1.15rem; font-weight: 600; line-height: 1.4; }
+    .goal-card.is-success { border-color: var(--success-border); background: var(--success-bg); }
+    .goal-card.is-success .goal-label { color: var(--success); }
+    .goal-card.is-warning { border-color: var(--warning-border); background: var(--warning-bg); }
+    .goal-card.is-warning .goal-label { color: var(--warning); }
+    .goal-card.is-danger { border-color: var(--danger-border); background: var(--danger-bg); }
+    .goal-card.is-danger .goal-label { color: var(--danger); }
+
+    /* ── Panels & tables ── */
+    .two-col { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1rem; flex: 1; min-height: 0; }
+    .panel { border: 1.5px solid var(--mid-gray); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.7rem; min-height: 0; flex: 1; }
+    .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; }
+    .panel-count { font-family: var(--mono); font-size: 0.72rem; color: var(--gray); }
+    .table-wrap { flex: 1; min-height: 0; overflow: auto; }
+    .table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.82rem; }
+    .table th, .table td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--mid-gray); text-align: left; vertical-align: top; overflow: hidden; text-overflow: ellipsis; }
+    .table th { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray); background: var(--light-gray); position: sticky; top: 0; }
+    .table th:nth-child(1), .table td:nth-child(1) { width: 16%; font-family: var(--mono); }
+    .table th:nth-child(2), .table td:nth-child(2) { width: 52%; }
+    .table th:nth-child(3), .table td:nth-child(3) { width: 20%; }
+    .table th:nth-child(4), .table td:nth-child(4) { width: 12%; text-align: right; }
+    .table tr:last-child td { border-bottom: none; }
+    .table small { display: block; font-family: var(--mono); font-size: 0.7rem; color: var(--gray); margin-top: 0.15rem; }
+    .empty { color: var(--gray); font-style: italic; }
+
+    .bar { height: 8px; border-radius: 999px; background: var(--light-gray); overflow: hidden; margin-top: 0.35rem; }
+    .bar-fill { height: 100%; background: var(--red); border-radius: inherit; }
+    .trend-table th:nth-child(1), .trend-table td:nth-child(1) { width: 34%; font-family: var(--sans); }
+    .trend-table th:nth-child(2), .trend-table td:nth-child(2) { width: 18%; }
+    .trend-table th:nth-child(3), .trend-table td:nth-child(3) { width: 18%; }
+    .trend-table th:nth-child(4), .trend-table td:nth-child(4) { width: 30%; text-align: left; }
+
+    .footer-note { font-family: var(--mono); font-size: 0.7rem; color: var(--gray); }
+
+    /* ── Trend slide: chart / table toggle ── */
+    .view-toggle { display: inline-flex; border: 1.5px solid var(--mid-gray); border-radius: 999px; padding: 2px; }
+    .view-toggle button {
+      border: 0; background: transparent; cursor: pointer; border-radius: 999px;
+      font-family: var(--mono); font-size: 0.72rem; color: var(--gray); padding: 0.25rem 0.8rem;
+    }
+    .view-toggle button[aria-pressed="true"] { background: var(--black); color: var(--white); }
+    .trend-panel[data-view="chart"] .trend-table-view,
+    .trend-panel[data-view="table"] .trend-chart { display: none; }
+    .trend-chart { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+    .chart-legend { display: flex; gap: 1.4rem; font-family: var(--mono); font-size: 0.72rem; color: var(--dark-gray); }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+    .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .swatch-committed { background: #ef8796; }
+    .swatch-completed { background: #ed1a3a; }
+    .chart-svg { flex: 1; min-height: 0; }
+    .chart-svg svg { width: 100%; height: 100%; display: block; }
+    .trend-column:hover path { opacity: 0.85; }
+
+    /* ── LLM summary (slide 2) and goal reasons ── */
+    .summary-card { border-left: 4px solid var(--red); background: var(--off-white); border-radius: 0 8px 8px 0; padding: 0.9rem 1.2rem; }
+    .summary-label { font-family: var(--mono); font-size: 0.68rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; }
+    .summary-text { font-size: 0.95rem; line-height: 1.55; margin-top: 0.35rem; color: var(--dark-gray); }
+    .goal-card .goal-why { font-size: 0.85rem; line-height: 1.45; color: var(--dark-gray); }
+    .goal-card .goal-evidence { font-family: var(--mono); font-size: 0.7rem; color: var(--gray); }
+    .goal-card .goal-why:empty, .goal-card .goal-evidence:empty { display: none; }
+
+    /* ── Speaker notes: hidden until N is pressed, never printed ── */
+    .notes {
+      display: none; position: absolute; left: 4.5rem; right: 4.5rem; bottom: 5.5rem; z-index: 5;
+      background: #111; color: #eee; border-left: 4px solid var(--red); border-radius: 0 8px 8px 0;
+      padding: 1rem 1.3rem; font-size: 0.9rem; line-height: 1.55; box-shadow: var(--shadow);
+    }
+    .notes-label { font-family: var(--mono); font-size: 0.68rem; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+    .notes ul { padding-left: 1.1rem; }
+    body.show-notes .slide.active .notes { display: block; }
+
+    /* ── Navigation ── */
+    .nav {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 1rem; z-index: 100;
+      background: rgba(255, 255, 255, 0.95); border: 1.5px solid var(--mid-gray);
+      border-radius: 999px; padding: 0.5rem 1.2rem; box-shadow: var(--shadow);
+    }
+    .nav button {
+      border: none; background: none; cursor: pointer;
+      font-family: var(--mono); font-size: 0.8rem; color: var(--black);
+      padding: 0.3rem 0.8rem; border-radius: 999px; transition: all 0.15s;
+    }
+    .nav button:hover { background: var(--red); color: var(--white); }
+    .counter { font-family: var(--mono); font-size: 0.75rem; color: var(--gray); min-width: 3.5rem; text-align: center; }
+    .dots { display: flex; gap: 4px; align-items: center; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mid-gray); cursor: pointer; transition: all 0.2s; }
+    .dot.active { background: var(--red); transform: scale(1.3); }
+    .kbd-hint { position: fixed; bottom: 1.5rem; right: 1.5rem; font-family: var(--mono); font-size: 0.65rem; color: var(--gray); }
+
+    @media (max-width: 1100px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two-col { grid-template-columns: 1fr; }
+      #s1 { flex-direction: column; }
+      #s1 .left { flex: none; padding: 3rem; }
+    }
+
+    @media print {
+      body { overflow: visible; height: auto; }
+      .slide { display: flex !important; position: relative; page-break-after: always; min-height: 100vh; }
+      .nav, .kbd-hint, .progress, .notes { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" id="progress"></div>
+
+  <div class="deck">
+    <!-- Slide 1: Cover -->
+    <section class="slide active" id="s1">
+      <div class="left">
+        <div class="cover-date">{{doc.header.sprint.startDate}} → {{doc.header.sprint.endDate}}</div>
+        <h1 class="cover-title">Sprint <span>review</span></h1>
+        <p class="cover-sprint">{{doc.header.sprint.name}}</p>
+        <p class="cover-board">{{doc.header.boardName}} · {{doc.header.projectKey}} / Board {{doc.header.boardId}}</p>
+        <div class="cover-stats">
+          <div class="cover-stat"><span class="cover-stat-n">{{lines.goalStatus}}</span><span class="cover-stat-l">goal status</span></div>
+          <div class="cover-stat"><span class="cover-stat-n">{{lines.ticketsDone}}</span><span class="cover-stat-l">tickets done</span></div>
+          <div class="cover-stat"><span class="cover-stat-n">{{view.deliveredPoints}}</span><span class="cover-stat-l">points delivered</span></div>
+          <div class="cover-stat"><span class="cover-stat-n">{{lines.daysLeft}}</span><span class="cover-stat-l">working days left</span></div>
+        </div>
+      </div>
+      <div class="right">
+        <div class="cover-art" aria-hidden="true">{{{view.coverSvg}}}</div>
+        <div class="cover-theme-label">{{view.coverLabel}}</div>
+        <div class="cover-theme">{{view.coverTheme}}</div>
+        <div class="cover-theme-bar"></div>
+      </div>
+      <aside class="notes">
+        <div class="notes-label">Speaker notes · summary</div>
+        {{#each view.summary}}<p>{{text}}</p>{{else}}<p>No LLM summary: export without --no-assess, with a model selected in pi.</p>{{/each}}
+      </aside>
+    </section>
+
+    <!-- Slide 2: Goal -->
+    <section class="slide" id="s2">
+      <div class="slide-corner">{{doc.header.sprint.endDate}}</div>
+      <div>
+        <div class="slide-kicker">Sprint goal</div>
+        <h2 class="slide-title">Did we achieve the objective?</h2>
+        <div class="slide-subtitle">{{doc.header.sprint.startDate}} → {{doc.header.sprint.endDate}}</div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi {{view.goalStatusClass}}"><div class="kpi-body">
+          <div class="kpi-label">Goal status</div>
+          <div class="kpi-value">{{lines.goalStatus}}</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Tickets done</div>
+          <div class="kpi-value">{{lines.ticketsDone}}</div>
+          <div class="kpi-sub">{{lines.cancelled}}</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Points delivered</div>
+          <div class="kpi-value">{{lines.pointsDelivered}}</div>
+          <div class="kpi-sub">{{lines.averageReliability}}</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Days left</div>
+          <div class="kpi-value">{{lines.daysLeft}}</div>
+          <div class="kpi-sub">working days</div>
+        </div></div>
+      </div>
+
+      {{#each view.summary}}
+      <div class="summary-card">
+        <div class="summary-label">Summary · assessed by {{model}}{{teamRules}}</div>
+        <p class="summary-text">{{text}}</p>
+      </div>
+      {{/each}}
+
+      <div class="goal-grid">
+        {{#each view.goals}}
+        <div class="goal-card {{statusClass}}">
+          <div class="goal-label"><svg class="goal-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>{{statusLabel}}</div>
+          <p class="goal-text">{{text}}</p>
+          <p class="goal-why">{{rationale}}</p>
+          <p class="goal-evidence">{{evidence}}</p>
+        </div>
+        {{else}}
+        <div class="goal-card"><p class="goal-text empty">No sprint goal set.</p></div>
+        {{/each}}
+      </div>
+      <p class="footer-note">{{lines.estimateBasis}}</p>
+      <aside class="notes">
+        <div class="notes-label">Speaker notes · goals</div>
+        <ul>{{#each view.goalNotes}}<li><strong>{{text}}</strong> — {{status}}: {{rationale}}</li>{{else}}<li>No LLM goal assessment for this export.</li>{{/each}}</ul>
+      </aside>
+    </section>
+
+    <!-- Slide 3: Delivered -->
+    <section class="slide" id="s3">
+      <div class="slide-corner">{{doc.header.sprint.endDate}}</div>
+      <div>
+        <div class="slide-kicker">Delivered</div>
+        <h2 class="slide-title">What did we finish?</h2>
+        <div class="slide-subtitle">Child tickets only · cancelled tickets excluded</div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Delivered</div>
+          <div class="kpi-value">{{doc.delivered.tickets}}</div>
+          <div class="kpi-sub">tickets</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Points</div>
+          <div class="kpi-value">{{view.deliveredPoints}}</div>
+          <div class="kpi-sub">{{lines.deliveredDelta}}</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Cancelled</div>
+          <div class="kpi-value">{{doc.delivered.cancelledCount}}</div>
+          <div class="kpi-sub">not counted</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Done elsewhere</div>
+          <div class="kpi-value">{{doc.delivered.doneElsewhereCount}}</div>
+          <div class="kpi-sub">finished in another sprint</div>
+        </div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3 class="panel-title">Delivered tickets</h3>
+          <span class="panel-count">{{doc.delivered.tickets}} items</span>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Ticket</th><th>Summary</th><th>Priority</th><th>Pts</th></tr></thead>
+            <tbody>
+              {{#each view.deliveredIssues}}
+              <tr><td>{{key}}</td><td>{{summary}}<small>{{meta}}</small></td><td>{{priority}}</td><td>{{estimate}}</td></tr>
+              {{else}}
+              <tr><td colspan="4" class="empty">Nothing delivered yet.</td></tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: Slipped -->
+    <section class="slide" id="s4">
+      <div class="slide-corner">{{doc.header.sprint.endDate}}</div>
+      <div>
+        <div class="slide-kicker">Slipped</div>
+        <h2 class="slide-title">What is still open?</h2>
+        <div class="slide-subtitle">Scope change: {{lines.scopeChange}}</div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Remaining points</div>
+          <div class="kpi-value">{{view.remainingPoints}}</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Almost done</div>
+          <div class="kpi-value">{{doc.slipped.almostDone}}</div>
+          <div class="kpi-sub">{{lines.almostDoneStatuses}}</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Not started</div>
+          <div class="kpi-value">{{doc.slipped.notStarted}}</div>
+          <div class="kpi-sub">in progress: {{doc.slipped.inProgress}}</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Unestimated</div>
+          <div class="kpi-value">{{doc.slipped.unestimated}}</div>
+          <div class="kpi-sub">no estimate · parents excluded</div>
+        </div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-head">
+            <h3 class="panel-title">Open / carryover</h3>
+            <span class="panel-count">{{lines.ticketsDone}} done</span>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Ticket</th><th>Summary</th><th>Priority</th><th>Pts</th></tr></thead>
+              <tbody>
+                {{#each view.slippedIssues}}
+                <tr><td>{{key}}</td><td>{{summary}}<small>{{meta}}</small></td><td>{{priority}}</td><td>{{estimate}}</td></tr>
+                {{else}}
+                <tr><td colspan="4" class="empty">No open tickets.</td></tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h3 class="panel-title">Punted</h3>
+            <span class="panel-count">removed from the sprint</span>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Ticket</th><th>Summary</th><th>Priority</th><th>Pts</th></tr></thead>
+              <tbody>
+                {{#each view.puntedIssues}}
+                <tr><td>{{key}}</td><td>{{summary}}<small>{{meta}}</small></td><td>{{priority}}</td><td>{{estimate}}</td></tr>
+                {{else}}
+                <tr><td colspan="4" class="empty">No punted tickets.</td></tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: Trend -->
+    <section class="slide" id="s5">
+      <div class="slide-corner">{{doc.header.sprint.endDate}}</div>
+      <div>
+        <div class="slide-kicker">Trend</div>
+        <h2 class="slide-title">How reliable are our commitments?</h2>
+        <div class="slide-subtitle">Last {{doc.trend.windowSize}} closed sprints · reliability = total completed ÷ total committed</div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Average completed</div>
+          <div class="kpi-value">{{view.averageCompleted}}</div>
+          <div class="kpi-sub">points per sprint</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Average committed</div>
+          <div class="kpi-value">{{view.averageCommitted}}</div>
+          <div class="kpi-sub">points per sprint</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Reliability</div>
+          <div class="kpi-value">{{lines.reliability}}</div>
+          <div class="kpi-sub">{{lines.currentReliability}}</div>
+        </div></div>
+        <div class="kpi"><div class="kpi-body">
+          <div class="kpi-label">Window</div>
+          <div class="kpi-value">{{doc.trend.windowSize}}</div>
+          <div class="kpi-sub">closed sprints</div>
+        </div></div>
+      </div>
+
+      <div class="panel trend-panel" data-view="chart">
+        <div class="panel-head">
+          <h3 class="panel-title">Previous sprints</h3>
+          <div class="view-toggle" role="group" aria-label="Previous sprints view">
+            <button type="button" data-show="chart" aria-pressed="true">Chart</button>
+            <button type="button" data-show="table" aria-pressed="false">Table</button>
+          </div>
+        </div>
+        <div class="trend-chart">
+          {{#each view.trendChart}}
+          <div class="chart-legend">
+            <span><i class="swatch swatch-committed"></i>Committed points</span>
+            <span><i class="swatch swatch-completed"></i>Completed points</span>
+          </div>
+          <div class="chart-svg">{{{svg}}}</div>
+          {{else}}
+          <p class="empty">No closed sprints yet.</p>
+          {{/each}}
+        </div>
+        <div class="table-wrap trend-table-view">
+          <table class="table trend-table">
+            <thead><tr><th>Sprint</th><th>Completed</th><th>Committed</th><th>Reliability</th></tr></thead>
+            <tbody>
+              {{#each view.sprints}}
+              <tr><td>{{name}}</td><td>{{completed}}</td><td>{{committed}}</td><td>{{reliability}}<div class="bar"><div class="bar-fill" style="width:{{barWidth}}"></div></div></td></tr>
+              {{else}}
+              <tr><td colspan="4" class="empty">No closed sprints yet.</td></tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="nav" aria-label="Slide navigation">
+    <button type="button" onclick="prev()">← prev</button>
+    <div class="dots" id="dots"></div>
+    <div class="counter" id="counter"></div>
+    <button type="button" onclick="next()">next →</button>
+  </div>
+  <div class="kbd-hint">← → or Space · N notes</div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const total = slides.length;
+    let current = 0;
+
+    const dotsEl = document.getElementById('dots');
+    const counterEl = document.getElementById('counter');
+    const progressEl = document.getElementById('progress');
+
+    for (let index = 0; index < total; index += 1) {
+      const dot = document.createElement('div');
+      dot.className = 'dot' + (index === 0 ? ' active' : '');
+      dot.addEventListener('click', () => goTo(index));
+      dotsEl.appendChild(dot);
+    }
+
+    function goTo(index) {
+      slides[current].classList.remove('active');
+      dotsEl.children[current].classList.remove('active');
+      current = Math.max(0, Math.min(total - 1, index));
+      slides[current].classList.add('active');
+      dotsEl.children[current].classList.add('active');
+      counterEl.textContent = `${current + 1} / ${total}`;
+      progressEl.style.width = `${((current + 1) / total) * 100}%`;
+    }
+
+    function next() { goTo(current + 1); }
+    function prev() { goTo(current - 1); }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight' || event.key === ' ') {
+        event.preventDefault();
+        next();
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        prev();
+      }
+      if (event.key === 'n' || event.key === 'N') {
+        document.body.classList.toggle('show-notes');
+      }
+    });
+
+    // Chart / table toggle on the trend slide.
+    document.querySelectorAll('.view-toggle button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const panel = button.closest('.trend-panel');
+        panel.dataset.view = button.dataset.show;
+        panel.querySelectorAll('.view-toggle button').forEach((other) => {
+          other.setAttribute('aria-pressed', String(other === button));
+        });
+      });
+    });
+
+    goTo(0);
+  </script>
+</body>
+</html>
